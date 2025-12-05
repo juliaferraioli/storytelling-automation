@@ -1,24 +1,25 @@
 export default async function handler(req, res) {
     // Restrict to POST requests
     if (req.method !== "POST") {
-        return {
-            statusCode: 405,
-            body: JSON.stringify({
-                error: "Method not allowed"
-            })
-        }
+        // return new Response("kinda not ok")
+        return new Response(
+            {
+            status: 405,
+            statusText: "Method not allowed"
+            }
+        )
     }
 
     try {
         // Validate incoming payload
         const { payload } = req.body;
         if (!payload || !payload.responses) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({
-                    error: "Invalid or missing payload.responses"
-                })
-            }
+            return new Response(
+                {
+                    status: 400,
+                    statusText: "Invalid or missing payload.responses"
+                }
+            )
         }
 
         // Extract storyteller info with safe defaults
@@ -87,22 +88,25 @@ export default async function handler(req, res) {
         // Validate environment variables
         const githubRepo = process.env.ISSUE_API_URL;
         if (!githubRepo || !githubRepo.includes("api.github.com")) {
-            return {
-                statusCode: 500,
-                body: JSON.stringify({
-                    error: "ISSUE_API_URL must be a valid GitHub API URL (e.g., https://api.github.com/repos/opensourcestories/storytelling-automation/issues)"
-                })
-            }
+            console.log("ISSUE_API_URL must be a valid GitHub API URL (e.g., https://api.github.com/repos/opensourcestories/storytelling-automation/issues)");
+            return new Response(
+                {
+                    status: 500,
+                    statusText: "ISSUE_API_URL must be a valid GitHub API URL (e.g., https://api.github.com/repos/opensourcestories/storytelling-automation/issues)"
+                }
+            )
         }
 
         const githubToken = process.env.GITHUB_TOKEN;
+
         if (!githubToken) {
-            return {
-                statusCode: 500,
-                body: JSON.stringify({
-                    error: "GITHUB_TOKEN environment variable not set"
-                })
-            }
+            console.log("GITHUB_TOKEN environment variable not set");
+            return new Response(
+                {
+                    status: 500,
+                    statusText: "GITHUB_TOKEN environment variable not set"
+                }
+            )
         }
 
         // Construct GitHub API payload (explicitly exclude invalid fields like 'links')
@@ -130,31 +134,28 @@ export default async function handler(req, res) {
         const data = await response.json();
 
         if (response.ok) {
-            return {
-                statusCode: 200,
-                body: JSON.stringify({
-                    message: "GitHub issue created successfully",
-                    issue: data.html_url,
-                    issue_number: data.number
-                })
-            }
+            return new Response(ok,
+                {
+                    status: 200,
+                    statusText: data.html_url
+                }
+            )
         } else {
             console.error("GitHub API error:", data);
-            return {
-                statusCode: 500,
-                body: JSON.stringify({
-                    error: "GitHub API error"
-                })
-            }
+            return new Response(
+                {
+                    status: 500,
+                    statusText: "GitHub API error"
+                }
+            )
         }
     } catch (err) {
         console.error("Webhook error:", err);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({
-                error: "Internal Server Error",
-                details: err.message
-            })
-        }
+        return new Response(
+            {
+                status: 500,
+                statusText: "Internal Server Error"
+            }
+        )
     }
 }
