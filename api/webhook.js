@@ -1,14 +1,24 @@
 export default async function handler(req, res) {
     // Restrict to POST requests
     if (req.method !== "POST") {
-        return res.status(405).json({ error: "Method not allowed" });
+        return {
+            statusCode: 405,
+            body: JSON.stringify({
+                error: "Method not allowed"
+            })
+        }
     }
 
     try {
         // Validate incoming payload
         const { payload } = req.body;
         if (!payload || !payload.responses) {
-            return res.status(400).json({ error: "Invalid or missing payload.responses" });
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    error: "Invalid or missing payload.responses"
+                })
+            }
         }
 
         // Extract storyteller info with safe defaults
@@ -77,12 +87,22 @@ export default async function handler(req, res) {
         // Validate environment variables
         const githubRepo = process.env.ISSUE_API_URL;
         if (!githubRepo || !githubRepo.includes("api.github.com")) {
-            return res.status(500).json({ error: "ISSUE_API_URL must be a valid GitHub API URL (e.g., https://api.github.com/repos/eskayML/storytelling-automation/issues)" });
+            return {
+                statusCode: 500,
+                body: JSON.stringify({
+                    error: "ISSUE_API_URL must be a valid GitHub API URL (e.g., https://api.github.com/repos/opensourcestories/storytelling-automation/issues)"
+                })
+            }
         }
 
         const githubToken = process.env.GITHUB_TOKEN;
         if (!githubToken) {
-            return res.status(500).json({ error: "GITHUB_TOKEN environment variable not set" });
+            return {
+                statusCode: 500,
+                body: JSON.stringify({
+                    error: "GITHUB_TOKEN environment variable not set"
+                })
+            }
         }
 
         // Construct GitHub API payload (explicitly exclude invalid fields like 'links')
@@ -110,24 +130,31 @@ export default async function handler(req, res) {
         const data = await response.json();
 
         if (response.ok) {
-            return res.status(200).json({
-                message: "GitHub issue created successfully",
-                issue: data.html_url,
-                issue_number: data.number,
-            });
+            return {
+                statusCode: 200,
+                body: JSON.stringify({
+                    message: "GitHub issue created successfully",
+                    issue: data.html_url,
+                    issue_number: data.number
+                })
+            }
         } else {
             console.error("GitHub API error:", data);
-            return res.status(response.status).json({
-                error: data.message || "GitHub API error",
-                documentation_url: data.documentation_url,
-                details: data,
-            });
+            return {
+                statusCode: 500,
+                body: JSON.stringify({
+                    error: "GitHub API error"
+                })
+            }
         }
     } catch (err) {
         console.error("Webhook error:", err);
-        return res.status(500).json({
-            error: "Internal Server Error",
-            details: err.message,
-        });
+        return {
+            statusCode: 500,
+            body: JSON.stringify({
+                error: "Internal Server Error",
+                details: err.message
+            })
+        }
     }
 }
